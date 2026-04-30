@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { 
   ShieldCheck, 
   ShieldAlert, 
@@ -53,6 +53,14 @@ export default function App() {
   const [results, setResults] = useState<Record<string, AnalysisResult>>({});
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [indices, setIndices] = useState<{name: string, type: string, status: string}[]>([
+    { name: "Global AML Standards 2024", type: "PDF", status: "Indexed" },
+    { name: "Internal Risk Matrix v4", type: "DOCX", status: "Indexed" },
+  ]);
+
+  const ingestInputRef = useRef<HTMLInputElement>(null);
+  const trainingInputRef = useRef<HTMLInputElement>(null);
+
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (u) => {
@@ -155,7 +163,72 @@ export default function App() {
     }
   };
 
+  const handleFileIngest = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const content = event.target?.result as string;
+      
+      if (file.name.endsWith('.json')) {
+        try {
+          const data = JSON.parse(content);
+          const txs = Array.isArray(data) ? data : [data];
+          for (const tx of txs) {
+            await addDoc(collection(db, 'transactions'), {
+              ...tx,
+              timestamp: tx.timestamp || new Date().toISOString(),
+              amount: parseFloat(tx.amount) || 0
+            });
+          }
+        } catch (err) {
+          console.error("Invalid JSON", err);
+        }
+      } else if (file.name.endsWith('.csv')) {
+        import('papaparse').then((Papa) => {
+          Papa.parse(content, {
+            header: true,
+            complete: async (results) => {
+              for (const row of results.data as any[]) {
+                if (!row.merchant) continue;
+                await addDoc(collection(db, 'transactions'), {
+                  merchant: row.merchant,
+                  amount: parseFloat(row.amount) || 0,
+                  location: row.location || 'Unknown',
+                  timestamp: row.timestamp || new Date().toISOString()
+                });
+              }
+            }
+          });
+        });
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  const handlePolicyUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const newIndex = {
+      name: file.name,
+      type: file.name.split('.').pop()?.toUpperCase() || 'FILE',
+      status: 'Indexing...'
+    };
+    
+    setIndices(prev => [newIndex, ...prev]);
+    
+    // Simulate RAG indexing
+    setTimeout(() => {
+      setIndices(prev => prev.map(inv => 
+        inv.name === file.name ? { ...inv, status: 'Indexed' } : inv
+      ));
+    }, 3000);
+  };
+
   if (!user) {
+
     return (
       <div className="min-h-screen bg-slate-50 text-slate-900 flex items-center justify-center p-6 font-sans">
         <motion.div 
@@ -236,13 +309,21 @@ export default function App() {
               <Search className="w-4 h-4 text-slate-400" />
               <input type="text" placeholder="Search trace logs..." className="bg-transparent border-none focus:outline-none text-sm w-48 text-slate-600 placeholder:text-slate-400" />
             </div>
+            <input 
+              type="file" 
+              ref={ingestInputRef} 
+              className="hidden" 
+              accept=".csv,.json"
+              onChange={handleFileIngest}
+            />
             <button 
-              onClick={uploadSampleData}
+              onClick={() => ingestInputRef.current?.click()}
               className="bg-slate-900 hover:bg-slate-800 text-white text-sm px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 shadow-sm"
             >
               <Upload className="w-4 h-4" />
               Ingest Data
             </button>
+
           </div>
         </header>
 
@@ -264,7 +345,16 @@ export default function App() {
                   </div>
                 </div>
 
-                <div className="border-2 border-dashed border-slate-200 rounded-2xl p-12 text-center space-y-4 hover:border-blue-500/50 hover:bg-slate-50 transition-all cursor-pointer group">
+                <div 
+                  onClick={() => trainingInputRef.current?.click()}
+                  className="border-2 border-dashed border-slate-200 rounded-2xl p-12 text-center space-y-4 hover:border-blue-500/50 hover:bg-slate-50 transition-all cursor-pointer group"
+                >
+                  <input 
+                    type="file" 
+                    ref={trainingInputRef} 
+                    className="hidden" 
+                    onChange={handlePolicyUpload}
+                  />
                   <div className="flex justify-center">
                     <Upload className="w-12 h-12 text-slate-300 group-hover:text-blue-500 transition-colors" />
                   </div>
@@ -277,9 +367,11 @@ export default function App() {
 
                 <div className="mt-8 space-y-3">
                   <h4 className="text-[10px] text-slate-400 uppercase font-mono font-bold tracking-widest px-2">Active Multi-Agent Indices</h4>
-                  <ComplianceIndexItem name="Global AML Standards 2024" type="PDF" status="Indexed" />
-                  <ComplianceIndexItem name="Internal Risk Matrix v4" type="DOCX" status="Indexed" />
+                  {indices.map((idx, i) => (
+                    <ComplianceIndexItem key={i} name={idx.name} type={idx.type} status={idx.status} />
+                  ))}
                 </div>
+
               </div>
             </div>
           )}
