@@ -1,0 +1,43 @@
+{
+  "entities": {
+    "Transaction": {
+      "title": "Transaction",
+      "description": "Raw transaction data to be analyzed",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "amount": { "type": "number" },
+        "location": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "merchant": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "flagged", "safe"] },
+        "userId": { "type": "string" }
+      },
+      "required": ["amount", "location", "timestamp", "merchant", "status"]
+    },
+    "AnalysisResult": {
+      "title": "Analysis Result",
+      "description": "Multi-agent analysis and risk scoring",
+      "type": "object",
+      "properties": {
+        "transactionId": { "type": "string" },
+        "riskScore": { "type": "number" },
+        "reasoning": { "type": "string" },
+        "agentTrace": { "type": "array" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["review_required", "approved", "rejected"] }
+      },
+      "required": ["transactionId", "riskScore", "reasoning", "agentTrace", "timestamp"]
+    }
+  },
+  "firestore": {
+    "/transactions/{transactionId}": {
+      "schema": "Transaction",
+      "description": "Collection of transactions"
+    },
+    "/analysis_results/{resultId}": {
+      "schema": "AnalysisResult",
+      "description": "Collection of analysis results linked to transactions"
+    }
+  }
+}

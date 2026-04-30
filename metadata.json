@@ -1,0 +1,6 @@
+{
+  "name": "Neuro SAN Fraud Guard",
+  "description": "Production-grade multi-agent AI system for fraud detection and risk scoring, powered by Neuro SAN Studio architecture.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["multi-agent-orchestration", "fraud-detection", "ai-monitoring"]
+}

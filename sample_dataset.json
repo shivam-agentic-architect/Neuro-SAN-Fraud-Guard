@@ -1,0 +1,26 @@
+[
+  {
+    "id": "tx_882190",
+    "amount": 4200.50,
+    "location": "Jakarta, ID",
+    "timestamp": "2024-04-30T10:15:00Z",
+    "merchant": "TechEquipments.com",
+    "status": "pending"
+  },
+  {
+    "id": "tx_882191",
+    "amount": 12.00,
+    "location": "San Francisco, US",
+    "timestamp": "2024-04-30T10:20:00Z",
+    "merchant": "Local Bakery",
+    "status": "safe"
+  },
+  {
+    "id": "tx_882192",
+    "amount": 15000.00,
+    "location": "Cayman Islands",
+    "timestamp": "2024-04-30T11:00:00Z",
+    "merchant": "Shell Corp",
+    "status": "flagged"
+  }
+]

@@ -1,0 +1,9 @@
+# Production dependencies for Neuro SAN Fraud Guard
+fastapi==0.110.0
+uvicorn==0.27.1
+pydantic==2.6.3
+python-multipart==0.0.9
+requests==2.31.0
+google-generativeai==0.4.1
+hocon==0.0.2
+# neuro-san-sdk @ git+https://github.com/cognizant-ai-lab/neuro-san-studio.git
